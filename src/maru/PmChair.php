@@ -9,6 +9,9 @@ use pocketmine\entity\Entity;
 use pocketmine\network\protocol\SetEntityLinkPacket;
 use pocketmine\network\protocol\RemoveEntityPacket;
 use pocketmine\utils\TextFormat;
+use pocketmine\event\server\DataPacketReceiveEvent;
+use pocketmine\network\protocol\PlayerActionPacket;
+use pocketmine\event\player\PlayerQuitEvent;
 class PmChair extends PluginBase implements Listener {
 	private $onChair = [ ];
 	public function onEnable() {
@@ -57,11 +60,32 @@ class PmChair extends PluginBase implements Listener {
 		} else {
 			$removeEntityPacket = new RemoveEntityPacket();
 			$removeEntityPacket->eid = $this->onChair[$player->getName()];
-			foreach ($this->getServer()->getOnlinePlayers() as $target) {
-				$target->dataPacket($removeEntityPacket);
-			}
+			$this->getServer()->broadcastPacket($this->getServer()->getOnlinePlayers(), $removeEntityPacket);
 			unset($this->onChair[$player->getName()]);
 		}
+	}
+	public function onJump(DataPacketReceiveEvent $event) {
+		$packet = $event->getPacket();
+		if (!$packet instanceof PlayerActionPacket) {
+			return;
+		}
+		$player = $event->getPlayer();
+		if ($packet->action === PlayerActionPacket::ACTION_JUMP && isset($this->onChair[$player->getName()])) {
+			$removepk = new RemoveEntityPacket();
+			$removepk->eid = $this->onChair[$player->getName()];
+			$this->getServer()->broadcastPacket($this->getServer()->getOnlinePlayers(), $removepk);
+			unset($this->onChair[$player->getName()]);
+		}
+	}
+	public function onQuit(PlayerQuitEvent $event) {
+		$player = $event->getPlayer();
+		if(!isset($this->onChair[$player->getName()])) {
+			return;
+		}
+		$removepk = new RemoveEntityPacket();
+		$removepk->eid = $this->onChair[$player->getName()];
+		$this->getServer()->broadcastPacket($this->getServer()->getOnlinePlayers(), $removepk);
+		unset($this->onChair[$player->getName()]);
 	}
 }
 ?>
