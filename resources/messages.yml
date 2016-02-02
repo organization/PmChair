@@ -1,0 +1,9 @@
+default-language: kor
+
+m_version: 1
+
+eng-touch-popup: Please touch again if you want it to sit on the stairs.
+eng-tagblock-message: ""
+
+kor-touch-popup: 계단에 앉으려면 한번 더 터치해 주세요.
+kor-tagblock-message: ""
