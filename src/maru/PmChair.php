@@ -64,26 +64,20 @@ class PmChair extends PluginBase implements Listener {
 					$addEntityPacket->item = 0;
 					$addEntityPacket->meta = 0;
 					$addEntityPacket->x = $block->getX () + 0.5;
-					$addEntityPacket->y = $block->getY () + 0.3;
+					$addEntityPacket->y = $block->getY () + 1.5;
 					$addEntityPacket->z = $block->getZ () + 0.5;
 					$addEntityPacket->type = Item::NETWORK_ID;
-					$addEntityPacket->metadata = [ 
-							Entity::DATA_FLAGS => [ 
-									Entity::DATA_TYPE_BYTE,
-									1 << Entity::DATA_FLAG_INVISIBLE 
-							],
-							Entity::DATA_NAMETAG => [ 
+					$flag = 0;
+					$flag |= (1 << Entity::DATA_FLAG_CAN_SHOW_NAMETAG) | (1 << Entity::DATA_FLAG_INVISIBLE) | (1 << Entity::DATA_FLAG_IMMOBILE) | (1 << Entity::DATA_FLAG_ALWAYS_SHOW_NAMETAG);
+					$addEntityPacket->metadata = [
+							Entity::DATA_NAMETAG => [
 									Entity::DATA_TYPE_STRING,
-									$this->get("tagblock-message") 
+									$this->get("tagblock-message")
 							],
-							Entity::DATA_SHOW_NAMETAG => [ 
-									Entity::DATA_TYPE_BYTE,
-									1 
-							],
-							Entity::DATA_NO_AI => [ 
-									Entity::DATA_TYPE_BYTE,
-									1 
-							] 
+							Entity::DATA_FLAGS => [
+									Entity::DATA_TYPE_LONG,
+									$flag
+							]
 					];
 					
 					$setEntityLinkPacket = new SetEntityLinkPacket ();
