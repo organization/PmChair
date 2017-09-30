@@ -6,16 +6,17 @@ use pocketmine\plugin\PluginBase;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\block\Stair;
-use pocketmine\network\protocol\AddEntityPacket;
 use pocketmine\entity\Entity;
-use pocketmine\network\protocol\SetEntityLinkPacket;
-use pocketmine\network\protocol\RemoveEntityPacket;
 use pocketmine\event\server\DataPacketReceiveEvent;
-use pocketmine\network\protocol\PlayerActionPacket;
 use pocketmine\event\player\PlayerQuitEvent;
 use pocketmine\entity\Item;
 use pocketmine\utils\TextFormat;
 use pocketmine\utils\Config;
+use pocketmine\network\mcpe\protocol\AddEntityPacket;
+use pocketmine\math\Vector3;
+use pocketmine\network\mcpe\protocol\SetEntityLinkPacket;
+use pocketmine\network\mcpe\protocol\PlayerActionPacket;
+use pocketmine\network\mcpe\protocol\RemoveEntityPacket;
 
 class PmChair extends PluginBase implements Listener {
 	private $onChair = [ ];
@@ -54,36 +55,14 @@ class PmChair extends PluginBase implements Listener {
 				}
 				if ($this->_microtime ( true ) - $this->doubleTap [$player->getName ()] < 0.5) {
 					
-					$addEntityPacket = new AddEntityPacket ();
-					$addEntityPacket->eid = $this->onChair [$player->getName ()] = Entity::$entityCount ++;
-					$addEntityPacket->speedX = 0;
-					$addEntityPacket->speedY = 0;
-					$addEntityPacket->speedZ = 0;
-					$addEntityPacket->pitch = 0;
-					$addEntityPacket->yaw = 0;
-					$addEntityPacket->item = 0;
-					$addEntityPacket->meta = 0;
-					$addEntityPacket->x = $block->getX () + 0.5;
-					$addEntityPacket->y = $block->getY () + 1.5;
-					$addEntityPacket->z = $block->getZ () + 0.5;
+					$addEntityPacket = new AddEntityPacket();
+					$addEntityPacket->entityRuntimeId = $this->onChair [$player->getName ()] = Entity::$entityCount ++;
+					$addEntityPacket->motion = new Vector3();
+					$addEntityPacket->position = $block->asVector3()->add(0.5, 1.5, 0.5);
 					$addEntityPacket->type = Item::NETWORK_ID;
-					$flag = 0;
-					$flag |= (1 << Entity::DATA_FLAG_CAN_SHOW_NAMETAG) | (1 << Entity::DATA_FLAG_INVISIBLE) | (1 << Entity::DATA_FLAG_IMMOBILE) | (1 << Entity::DATA_FLAG_ALWAYS_SHOW_NAMETAG);
-					$addEntityPacket->metadata = [
-							Entity::DATA_NAMETAG => [
-									Entity::DATA_TYPE_STRING,
-									$this->get("tagblock-message")
-							],
-							Entity::DATA_FLAGS => [
-									Entity::DATA_TYPE_LONG,
-									$flag
-							]
-					];
 					
-					$setEntityLinkPacket = new SetEntityLinkPacket ();
-					$setEntityLinkPacket->from = $addEntityPacket->eid;
-					$setEntityLinkPacket->to = $player->getId ();
-					$setEntityLinkPacket->type = true;
+					$setEntityLinkPacket = new SetEntityLinkPacket();
+					$setEntityLinkPacket->link = [$addEntityPacket->entityRuntimeId, $player->getId(), true];
 					
 					foreach ( $this->getServer ()->getOnlinePlayers () as $target ) {
 						$target->dataPacket ( $addEntityPacket );
@@ -92,7 +71,7 @@ class PmChair extends PluginBase implements Listener {
 						}
 					}
 					
-					$setEntityLinkPacket->to = 0;
+					$setEntityLinkPacket->link = [$addEntityPacket->entityRuntimeId, 0, true];
 					$player->dataPacket ( $setEntityLinkPacket );
 					unset($this->doubleTap[$player->getName()]);
 				} else {
@@ -103,7 +82,7 @@ class PmChair extends PluginBase implements Listener {
 			}
 		} else {
 			$removeEntityPacket = new RemoveEntityPacket ();
-			$removeEntityPacket->eid = $this->onChair [$player->getName ()];
+			$removeEntityPacket->entityUniqueId = $this->onChair [$player->getName ()];
 			$this->getServer ()->broadcastPacket ( $this->getServer ()->getOnlinePlayers (), $removeEntityPacket );
 			unset ( $this->onChair [$player->getName ()] );
 		}
@@ -118,8 +97,8 @@ class PmChair extends PluginBase implements Listener {
 		}
 		$player = $event->getPlayer ();
 		if ($packet->action === PlayerActionPacket::ACTION_JUMP && isset ( $this->onChair [$player->getName ()] )) {
-			$removepk = new RemoveEntityPacket ();
-			$removepk->eid = $this->onChair [$player->getName ()];
+			$removepk = new RemoveEntityPacket();
+			$removepk->entityUniqueId = $this->onChair [$player->getName ()];
 			$this->getServer ()->broadcastPacket ( $this->getServer ()->getOnlinePlayers (), $removepk );
 			unset ( $this->onChair [$player->getName ()] );
 		}
@@ -130,7 +109,7 @@ class PmChair extends PluginBase implements Listener {
 			return;
 		}
 		$removepk = new RemoveEntityPacket ();
-		$removepk->eid = $this->onChair [$player->getName ()];
+		$removepk->entityUniqueId = $this->onChair [$player->getName ()];
 		$this->getServer ()->broadcastPacket ( $this->getServer ()->getOnlinePlayers (), $removepk );
 		unset ( $this->onChair [$player->getName ()] );
 	}
